@@ -1,0 +1,493 @@
+index.html
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>飲み会リマインダー</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#f97316" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="飲み会" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: #fff7ed;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            color: #1c1917;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 2rem 1.75rem;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .emoji-header {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.25rem;
+            color: #1c1917;
+        }
+
+        .subtitle {
+            font-size: 0.875rem;
+            text-align: center;
+            color: #78716c;
+            margin-bottom: 1.75rem;
+        }
+
+        .section-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #78716c;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.04em;
+        }
+
+        .interval-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .interval-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .interval-btn {
+            flex: 1;
+            padding: 0.6rem 0;
+            border: 2px solid #e7e5e4;
+            border-radius: 12px;
+            background: #fff;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #78716c;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .interval-btn.active {
+            border-color: #f97316;
+            background: #fff7ed;
+            color: #ea580c;
+        }
+
+        .interval-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .start-btn {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 16px;
+            border: none;
+            background: #f97316;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.02em;
+            transition: background 0.15s, transform 0.1s;
+            margin-top: 0.5rem;
+        }
+
+        .start-btn:active {
+            transform: scale(0.97);
+        }
+
+        .start-btn:hover {
+            background: #ea580c;
+        }
+
+        .start-btn.running {
+            background: #dc2626;
+        }
+
+        .start-btn.running:hover {
+            background: #b91c1c;
+        }
+
+        .status-panel {
+            display: none;
+            margin-top: 1.5rem;
+            background: #f5f5f4;
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+        }
+
+        .status-panel.visible {
+            display: block;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+            color: #57534e;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-val {
+            font-weight: 700;
+            color: #1c1917;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .next-badge {
+            display: inline-block;
+            background: #fff7ed;
+            color: #ea580c;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            padding: 2px 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .notif-warn {
+            margin-top: 1.25rem;
+            background: #fef9c3;
+            border: 1px solid #fde047;
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            color: #713f12;
+            display: none;
+        }
+
+        .notif-warn.visible {
+            display: block;
+        }
+
+        .history {
+            margin-top: 1.5rem;
+        }
+
+        .history-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #78716c;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-list {
+            list-style: none;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .history-list li {
+            font-size: 0.8rem;
+            color: #57534e;
+            padding: 3px 0;
+            border-bottom: 1px solid #f5f5f4;
+        }
+
+        .history-list li:last-child {
+            border-bottom: none;
+        }
+
+        .pwa-install {
+            margin-top: 1.25rem;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            color: #1e40af;
+            display: none;
+        }
+
+        .pwa-install.visible {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .pwa-install button {
+            flex-shrink: 0;
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="emoji-header">🍺</div>
+        <h1>飲み会リマインダー</h1>
+        <p class="subtitle">LINEチェックを忘れないために</p>
+
+        <div class="interval-group">
+            <div class="section-label">リマインド間隔</div>
+            <div class="interval-buttons">
+                <button class="interval-btn" data-min="30">30分</button>
+                <button class="interval-btn active" data-min="45">45分</button>
+                <button class="interval-btn" data-min="60">60分</button>
+            </div>
+        </div>
+
+        <button class="start-btn" id="mainBtn">🍺 今から飲みに行く</button>
+
+        <div class="status-panel" id="statusPanel">
+            <div class="status-row">
+                <span>経過時間</span>
+                <span class="status-val" id="elapsed">00:00</span>
+            </div>
+            <div class="status-row">
+                <span>次のリマインド</span>
+                <span class="next-badge" id="nextIn">--分後</span>
+            </div>
+            <div class="status-row">
+                <span>リマインド回数</span>
+                <span class="status-val" id="count">0回</span>
+            </div>
+        </div>
+
+        <div class="notif-warn" id="notifWarn">
+            ⚠️ 通知の許可が必要です。ブラウザの設定から通知を許可してください。
+        </div>
+
+        <div class="pwa-install" id="pwaInstall">
+            <span>ホーム画面に追加するとより便利！</span>
+            <button id="installBtn">追加</button>
+        </div>
+
+        <div class="history" id="historySection" style="display:none">
+            <div class="history-title">📋 リマインド履歴</div>
+            <ul class="history-list" id="historyList"></ul>
+        </div>
+    </div>
+
+    <script>
+        let intervalMin = 45;
+        let running = false;
+        let startTime = null;
+        let elapsedTimer = null;
+        let reminderTimer = null;
+        let reminderCount = 0;
+        let deferredPrompt = null;
+
+        const mainBtn = document.getElementById('mainBtn');
+        const statusPanel = document.getElementById('statusPanel');
+        const elapsedEl = document.getElementById('elapsed');
+        const nextInEl = document.getElementById('nextIn');
+        const countEl = document.getElementById('count');
+        const notifWarn = document.getElementById('notifWarn');
+        const pwaInstall = document.getElementById('pwaInstall');
+        const installBtn = document.getElementById('installBtn');
+        const historySection = document.getElementById('historySection');
+        const historyList = document.getElementById('historyList');
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(() => { });
+        }
+
+        // PWA install prompt
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredPrompt = e;
+            pwaInstall.classList.add('visible');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const result = await deferredPrompt.userChoice;
+            if (result.outcome === 'accepted') pwaInstall.style.display = 'none';
+            deferredPrompt = null;
+        });
+
+        // Interval selection
+        document.querySelectorAll('.interval-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (running) return;
+                document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                intervalMin = parseInt(btn.dataset.min);
+            });
+        });
+
+        async function requestNotification() {
+            if (!('Notification' in window)) return false;
+            if (Notification.permission === 'granted') return true;
+            if (Notification.permission === 'denied') return false;
+            const perm = await Notification.requestPermission();
+            return perm === 'granted';
+        }
+
+        function sendReminder() {
+            reminderCount++;
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+            countEl.textContent = reminderCount + '回';
+
+            // Add history
+            const li = document.createElement('li');
+            li.textContent = `${timeStr} — LINEチェック #${reminderCount}`;
+            historyList.prepend(li);
+            historySection.style.display = 'block';
+
+            // Notification
+            if (Notification.permission === 'granted') {
+                new Notification('📱 LINEチェック！', {
+                    body: `彼女からのLINEを確認しよう（${reminderCount}回目）`,
+                    icon: './icon-192.png',
+                    badge: './icon-192.png',
+                    vibrate: [200, 100, 200],
+                    tag: 'line-reminder',
+                    renotify: true,
+                });
+            }
+
+            scheduleNext();
+        }
+
+        function scheduleNext() {
+            clearTimeout(reminderTimer);
+            const ms = intervalMin * 60 * 1000;
+            reminderTimer = setTimeout(sendReminder, ms);
+            updateNextIn();
+        }
+
+        let nextInInterval = null;
+        let nextFireTime = null;
+
+        function updateNextIn() {
+            clearInterval(nextInInterval);
+            nextFireTime = Date.now() + intervalMin * 60 * 1000;
+
+            nextInInterval = setInterval(() => {
+                const remaining = Math.max(0, nextFireTime - Date.now());
+                const m = Math.floor(remaining / 60000);
+                const s = Math.floor((remaining % 60000) / 1000);
+                nextInEl.textContent = `${m}:${String(s).padStart(2, '0')}後`;
+                if (remaining === 0) clearInterval(nextInInterval);
+            }, 1000);
+        }
+
+        function updateElapsed() {
+            const diff = Date.now() - startTime;
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            if (h > 0) {
+                elapsedEl.textContent = `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            } else {
+                elapsedEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }
+        }
+
+        async function startSession() {
+            const granted = await requestNotification();
+            if (!granted) {
+                notifWarn.classList.add('visible');
+            } else {
+                notifWarn.classList.remove('visible');
+            }
+
+            running = true;
+            startTime = Date.now();
+            reminderCount = 0;
+            historyList.innerHTML = '';
+            historySection.style.display = 'none';
+
+            mainBtn.textContent = '🛑 飲み会終了';
+            mainBtn.classList.add('running');
+            document.querySelectorAll('.interval-btn').forEach(b => b.disabled = true);
+
+            statusPanel.classList.add('visible');
+            countEl.textContent = '0回';
+
+            elapsedTimer = setInterval(updateElapsed, 1000);
+            scheduleNext();
+        }
+
+        function stopSession() {
+            running = false;
+            clearInterval(elapsedTimer);
+            clearTimeout(reminderTimer);
+            clearInterval(nextInInterval);
+
+            mainBtn.textContent = '🍺 今から飲みに行く';
+            mainBtn.classList.remove('running');
+            document.querySelectorAll('.interval-btn').forEach(b => b.disabled = false);
+            nextInEl.textContent = '--';
+            statusPanel.classList.remove('visible');
+        }
+
+        mainBtn.addEventListener('click', () => {
+            if (!running) {
+                startSession();
+            } else {
+                stopSession();
+            }
+        });
+
+        // Restore session if page was reloaded mid-session
+        const savedStart = sessionStorage.getItem('nomikai_start');
+        const savedInterval = sessionStorage.getItem('nomikai_interval');
+        if (savedStart) {
+            intervalMin = parseInt(savedInterval) || 45;
+            document.querySelectorAll('.interval-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.min) === intervalMin);
+            });
+            startSession();
+            startTime = parseInt(savedStart);
+        }
+
+        // Persist session across reloads
+        window.addEventListener('beforeunload', () => {
+            if (running) {
+                sessionStorage.setItem('nomikai_start', startTime);
+                sessionStorage.setItem('nomikai_interval', intervalMin);
+            } else {
+                sessionStorage.removeItem('nomikai_start');
+                sessionStorage.removeItem('nomikai_interval');
+            }
+        });
+    </script>
+</body>
+
+</html>
