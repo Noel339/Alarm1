@@ -306,6 +306,25 @@
         let reminderTimer = null;
         let reminderCount = 0;
         let deferredPrompt = null;
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            if (!('wakeLock' in navigator)) return;
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => {
+                    if (running) requestWakeLock();
+                });
+            } catch (e) { }
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock) { wakeLock.release(); wakeLock = null; }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && running) requestWakeLock();
+        });
 
         const mainBtn = document.getElementById('mainBtn');
         const statusPanel = document.getElementById('statusPanel');
@@ -442,6 +461,7 @@
 
             elapsedTimer = setInterval(updateElapsed, 1000);
             scheduleNext();
+            requestWakeLock();
         }
 
         function stopSession() {
@@ -449,6 +469,7 @@
             clearInterval(elapsedTimer);
             clearTimeout(reminderTimer);
             clearInterval(nextInInterval);
+            releaseWakeLock();
 
             mainBtn.textContent = '🍺 今から飲みに行く';
             mainBtn.classList.remove('running');
